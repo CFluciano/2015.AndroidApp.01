@@ -1,12 +1,14 @@
 package de.cyberforum.openit_project_20151.NewsImplementation;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import de.cyberforum.openit_project_20151.NewsInterface.FetchError0;
 import de.cyberforum.openit_project_20151.NewsInterface.NewsAction0;
 import de.cyberforum.openit_project_20151.NewsInterface.NewsFetchAction0;
 import de.cyberforum.openit_project_20151.NewsInterface.NewsFetchReaction0;
 import de.cyberforum.openit_project_20151.NewsInterface.NewsItemRead0;
+import de.cyberforum.openit_project_20151.NewsInterface.NewsItemStatus0;
 import de.cyberforum.openit_project_20151.NewsInterface.NewsUIReaction0;
 
 /**
@@ -33,7 +35,37 @@ public class NewsFactory implements NewsAction0, NewsFetchReaction0 {
         // initiate fetch:
         // TODO: depending on type and itemOffset, do specific fetch
         // TODO: remember what was fetched, so it is not fetched again
-        newsFetchAction.initiateFetch(fetchMode, 0, null);
+        int step = 0;
+        Object params = null;
+        switch(fetchMode) {
+            case FM__ALL__PUBLISHED_DESC:
+                // 1. check if we already got the "oldest" available news:
+                //    if yes, exit; otherwise continue
+                // [correct solution]
+                // 2. read the timestamp for previous "oldest" from storage
+                // [incorrect, lazy solution]
+                // 2. take the timestamp of the "oldest" news in the cache
+                // [even more incorrect, lazy solution]
+                // 2. take the timestamp of the news with the smallest id
+
+                // [most incorrect]
+                // 2. just ask newsCache for the news on the "bottom"
+                ArrayList<NewsItemStatus0> idList = newsCache.getIds(fetchMode, 1, -1);
+                if ((idList != null) && (idList.size() == 1)) {
+                    NewsItemStatus0 newsItemStatus = idList.get(0);
+                    ArrayList<NewsItemRead0> items = newsCache.getItems(idList);
+                    if ((items != null) && (items.size() == 1)) {
+                        NewsItemRead0 item = items.get(0);
+                        Date publishedJava = item.getPublished();
+                        Long publishedUnix = - (publishedJava.getTime() / 1000);
+                        params = publishedUnix;
+                    }
+                }
+
+                break;
+        }
+
+        newsFetchAction.initiateFetch(fetchMode, step, params);
 
         return cachedData;
     }

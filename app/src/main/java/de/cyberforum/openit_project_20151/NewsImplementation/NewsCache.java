@@ -10,15 +10,15 @@ import de.cyberforum.openit_project_20151.NewsInterface.NewsItemStatus0;
  */
 public class NewsCache {
 
-    protected int totalCount = 0;
-
     public NewsCache() {
         // create database if not existing
         // initialize if existing: totalCount
     }
 
     // total number of stored items
-    public Integer getCount() { return totalCount; }
+    public Integer getCount() {
+        return 0;
+    }
 
     // return list of { ID, modified } to mode
     public ArrayList<NewsItemStatus0> getIds(FetchMode mode, Integer itemCount, Integer itemOffset) {
