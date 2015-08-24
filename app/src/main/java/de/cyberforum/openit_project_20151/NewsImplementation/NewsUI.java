@@ -31,19 +31,16 @@ public class NewsUI implements NewsAction0, NewsUIAction0, NewsUIReaction0 {
         newsFactoryAction0 = (NewsAction0)newsFactory;
     }
 
-    public void activityChangeFragment(FetchMode fetchmode, Fragment fragmentNew) throws ClassCastException {
-        this.fetchMode = fetchmode;
+    public void activityChangeFragment(FetchMode fetchMode, Fragment fragmentNew) throws ClassCastException {
+        this.fetchMode = fetchMode;
         fragment = fragmentNew;
 
         uiReaction0 = (NewsUIReaction0)fragment;
     }
 
-    protected ArrayList<NewsItemRead0> newsItems;
-
     public ArrayList<NewsItemRead0> get(FetchMode fetchmode, Integer itemCount, Integer itemOffset) {
         this.fetchMode = fetchmode;
-        this.newsItems = newsFactoryAction0.get(fetchmode, itemCount, itemOffset);
-        return newsItems;
+        return newsFactoryAction0.get(fetchmode, itemCount, itemOffset);
     }
 
     public void update(FetchMode fetchMode, ArrayList<NewsItemRead0> newsItems) {

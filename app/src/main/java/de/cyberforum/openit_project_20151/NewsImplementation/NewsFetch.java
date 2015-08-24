@@ -27,36 +27,75 @@ public class NewsFetch implements NewsFetchAction0 {
         this.newsFetchReaction = newsFetchReaction;
     }
 
-    public FetchError0 initiateFetch(FetchMode fetchMode) {
+    public FetchError0 initiateFetch(FetchMode fetchMode, int step, Object params) {
         // null: request was queued successfully, otherwise: error object
         // TODO: check for network
-        startFetch(fetchMode);
+        // TODO: put into fetch queue
+        startFetch(fetchMode, step, params);
         return null;
     }
 
     protected ArrayList<AsyncHttpClient> clients;
 
-    protected void startFetch(FetchMode fetchMode) {
+    protected void startFetch(FetchMode fetchMode, int step, Object params) {
         TextHttpResponseHandlerEx handler = new TextHttpResponseHandlerEx();
-		handler.setOwnArguments(fetchMode, newsFetchReaction);
+		handler.setOwnArguments(fetchMode, step, params, newsFetchReaction);
+
+        String url = "http://www.cyberforum.de/cybermobile.php";
+        if (fetchMode == FetchMode.FM__ALL__PUBLISHED_DESC) {
+            if (params instanceof Long) {
+                Long param = (Long) params;
+                if (param < 0) {
+                    param = -param;
+                    url += "?method=olderIDThan&parameters=" + param.toString();
+                } else
+                    url += "?method=newerIDThan&parameters=" + param.toString();
+            } else if (params instanceof Integer) {
+                Integer param = (Integer) params;
+                if (param < 0) {
+                    param = -param;
+                    url += "?method=smallerIDThan&parameters=" + param.toString();
+                } else
+                    url += "?method=greaterIDThan&parameters=" + param.toString();
+            } else {
+                // storage completely empty or unknown params
+                Long now = System.currentTimeMillis() / 1000;
+                url += "?method=olderIDThan&parameters=" + now.toString();
+            }
+        }
 
         AsyncHttpClient client = new AsyncHttpClient();
         // client.setBasicAuth("<login>", "<pwd>");
-        client.get("http://www.cyberforum.de/cybermobile.php", handler);
+        client.get(url, handler);
     }
 
 	protected class TextHttpResponseHandlerEx extends TextHttpResponseHandler {
 
         protected FetchMode fetchMode;
+        protected int step;
+        protected Object params;
 		protected NewsFetchReaction0 newsFetchReaction;
 
-		public void setOwnArguments(FetchMode fetchMode, NewsFetchReaction0 newsFetchReaction) {
+		public void setOwnArguments(FetchMode fetchMode, int step, Object params, NewsFetchReaction0 newsFetchReaction) {
             this.fetchMode = fetchMode;
+            this.step = step;
+            this.params = params;
 			this.newsFetchReaction = newsFetchReaction;
 		}
 
 		@Override
         public void onSuccess(String responseBody) {
+            switch(this.fetchMode) {
+                case FM_TOP:
+                    onSuccessTop5(responseBody);
+                    break;
+
+                case FM__ALL__PUBLISHED_DESC:
+                    onSuccessAllPubDesc(responseBody);
+            }
+        }
+
+        protected void onSuccessTop5(String responseBody) {
             JSONArray response;
 
             try {
@@ -86,6 +125,60 @@ public class NewsFetch implements NewsFetchAction0 {
                     }
 
                     NewsItem newsItem = new NewsItem(id, null, null);
+
+                    Long datetimeUnix;
+                    Date datetimeJava;
+                    String title;
+                    String subtitle;
+                    try {
+                        datetimeUnix = line.getLong("at");
+                        title = line.getString("newsTitle");
+                        subtitle = line.getString("summary");
+                        datetimeJava = new Date(datetimeUnix * 1000);
+                        newsItem.NewsItemWrite(datetimeJava, title, subtitle, null);
+                    } catch (JSONException e) {
+                        // ignore any failure here
+                    }
+
+                    newsItems.add(newsItem);
+                }
+
+                if (newsItems.size() > 0)
+                    newsFetchReaction.fetchResult(fetchMode, newsItems);
+            }
+        }
+
+        protected void onSuccessAllPubDesc(String responseBody) {
+            JSONObject container;
+            JSONArray response;
+
+            try {
+                container = new JSONObject(responseBody);
+                if (!container.has("idList")) {
+                    FetchError fetchError = new FetchError(fetchMode, "foo", "bar");
+                    newsFetchReaction.fetchError(fetchError);
+                    return;
+                }
+
+                response = container.getJSONArray("idList");
+            } catch (JSONException e) {
+                FetchError fetchError = new FetchError(fetchMode, "foo", "bar");
+                newsFetchReaction.fetchError(fetchError);
+                return;
+            }
+
+            int len = response.length();
+            if (len > 0) {
+                ArrayList<NewsItemRead0> newsItems = new ArrayList<>();
+                for(int i = 0; i < len; i++) {
+                    Integer id;
+                    try {
+                        id = response.getInt(i);
+                    } catch (JSONException e) {
+                        break;
+                    }
+
+                    NewsItem newsItem = new NewsItem(id, null, null);
                     newsItems.add(newsItem);
                 }
 
@@ -102,13 +195,13 @@ public class NewsFetch implements NewsFetchAction0 {
 	}
 
     protected class NewsItem implements NewsItemRead0 {
-        NewsItem(Integer id, Date modified, Boolean valid) {
+        NewsItem(int id, Date modified, Boolean valid) {
             this.id = id;
             this.modified = modified;
             this.valid = true;
         }
-        protected Integer id;
-        public Integer getId() { return id; }
+        protected int id;
+        public int getId() { return id; }
         protected Date modified;
         public Date getModified() { return modified; }
 
@@ -116,16 +209,20 @@ public class NewsFetch implements NewsFetchAction0 {
         protected Boolean valid;
         public Boolean getValid() { return valid; }
 
-        public void NewsItemWrite(Date published, String title, String body) {
+        public void NewsItemWrite(Date published, String title, String subtitle, String body) {
             this.published = published;
             this.title = title;
+            this.subtitle = subtitle;
             this.body = body;
         }
+
         protected Date published;
         protected String title;
+        protected String subtitle;
         protected String body;
         public Date getPublished() { return published; }
-        public String getTitle() { return title; }      // plain text, UTF-8
-        public String getBody() { return body; }       // HTML, UTF-8
+        public String getTitle() { return title; }          // plain text, UTF-8
+        public String getSubtitle() { return subtitle; }    // plain text, UTF-8
+        public String getBody() { return body; }            // HTML, UTF-8
     }
 }

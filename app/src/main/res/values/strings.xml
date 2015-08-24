@@ -2,5 +2,8 @@
     <string name="app_name">OpenIT-Project-2015.1</string>
     <string name="hello_world">Hello world!</string>
     <string name="loading">Loading, please wait...</string>
+
+    <string name="action_top5">Neueste Einträge</string>
+    <string name="action_list">Liste aller Einträge</string>
     <string name="action_settings">Settings</string>
 </resources>

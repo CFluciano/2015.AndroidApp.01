@@ -30,8 +30,10 @@ public class NewsFactory implements NewsAction0, NewsFetchReaction0 {
         // read from cache
         ArrayList<NewsItemRead0> cachedData = null;
 
-        // initiate fetch
-        newsFetchAction.initiateFetch(fetchMode);
+        // initiate fetch:
+        // TODO: depending on type and itemOffset, do specific fetch
+        // TODO: remember what was fetched, so it is not fetched again
+        newsFetchAction.initiateFetch(fetchMode, 0, null);
 
         return cachedData;
     }

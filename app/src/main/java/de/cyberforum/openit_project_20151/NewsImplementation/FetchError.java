@@ -15,6 +15,6 @@ public class FetchError implements FetchError0 {
     }
 
     public FetchMode getMode() { return FetchMode.FM_TOP; }
-    public String getContext() { return "" ; }
-    public String getError() { return "" ; }
+    public String getContext() { return context; }
+    public String getError() { return error; }
 }

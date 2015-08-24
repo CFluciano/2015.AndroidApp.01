@@ -8,5 +8,6 @@ import java.util.Date;
 public interface NewsItemRead0 extends NewsItemStatus0 {
     Date getPublished();
     String getTitle();      // plain text, UTF-8
+    String getSubtitle();   // plain text, UTF-8
     String getBody();       // HTML, UTF-8
 }
